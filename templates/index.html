@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traditional Temperature Converter</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">Traditional Temperature Converter</h1>
+        
+        <div class="space-y-4">
+            <div>
+                <label for="temperature" class="block text-sm font-medium text-gray-700">Temperature</label>
+                <input type="number" id="temperature" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter temperature">
+            </div>
+
+            <div class="flex space-x-4">
+                <button onclick="convert('ctof')" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    °C to °F
+                </button>
+                <button onclick="convert('ftoc')" class="flex-1 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    °F to °C
+                </button>
+            </div>
+
+            <div id="result" class="mt-4 p-4 rounded-md hidden">
+                <p class="text-lg font-semibold text-center"></p>
+                <div class="mt-2 text-sm text-gray-600">
+                    <p class="response-time"></p>
+                    <p class="memory-usage"></p>
+                    <p class="cpu-usage"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function convert(type) {
+            const temp = document.getElementById('temperature').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!temp) {
+                alert('Please enter a temperature');
+                return;
+            }
+
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        temperature: temp,
+                        type: type
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                const fromUnit = type === 'ctof' ? '°C' : '°F';
+                const toUnit = type === 'ctof' ? '°F' : '°C';
+
+                resultDiv.classList.remove('hidden');
+                resultDiv.querySelector('p').textContent = `${temp}${fromUnit} = ${data.result}${toUnit}`;
+                
+                // Display performance metrics
+                resultDiv.querySelector('.response-time').textContent = `Response Time: ${data.metrics.response_time_ms.toFixed(2)}ms`;
+                resultDiv.querySelector('.memory-usage').textContent = `Memory Usage: ${data.metrics.memory_percent.toFixed(2)}%`;
+                resultDiv.querySelector('.cpu-usage').textContent = `CPU Usage: ${data.metrics.cpu_percent.toFixed(2)}%`;
+
+            } catch (error) {
+                alert('An error occurred');
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
