@@ -5,6 +5,15 @@ import os
 
 app = Flask(__name__)
 
+# Production optimizations
+app.config['TEMPLATES_AUTO_RELOAD'] = False
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # 1 year
+app.config['STATIC_FILE_MAX_AGE'] = 31536000  # 1 year
+
+# Jinja2 template optimization
+app.jinja_env.auto_reload = False
+app.jinja_env.cache_size = 50
+
 PERFORMANCE_METRICS = {
     'response_times': [],
     'memory_usage': [],
@@ -71,4 +80,7 @@ def metrics():
     })
 
 if __name__ == '__main__':
+    # Production settings when running directly
+    app.config['ENV'] = 'production'
+    app.config['DEBUG'] = False
     app.run(host='0.0.0.0', port=3000)
