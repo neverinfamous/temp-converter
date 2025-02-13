@@ -10,7 +10,8 @@
     <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
         <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">Traditional Temperature Converter</h1>
         
-        <div class="space-y-4">
+        <!-- Regular conversion section -->
+        <div class="space-y-4 mb-8">
             <div>
                 <label for="temperature" class="block text-sm font-medium text-gray-700">Temperature</label>
                 <input type="number" id="temperature" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter temperature">
@@ -34,9 +35,43 @@
                 </div>
             </div>
         </div>
+
+        <!-- Stress test section -->
+        <div class="border-t pt-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-800">Performance Testing</h2>
+            <div class="space-y-4">
+                <div>
+                    <label for="requestCount" class="block text-sm font-medium text-gray-700">Number of Requests</label>
+                    <input type="number" id="requestCount" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter number of requests" value="100">
+                </div>
+
+                <div>
+                    <label for="testTemp" class="block text-sm font-medium text-gray-700">Test Temperature</label>
+                    <input type="number" id="testTemp" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter test temperature" value="20">
+                </div>
+
+                <div class="flex space-x-4">
+                    <button onclick="runStressTest('ctof')" id="stressTestBtn" class="flex-1 bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                        Run Test
+                    </button>
+                    <button onclick="downloadMetrics()" id="downloadBtn" class="flex-1 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 hidden">
+                        Download Performance Data
+                    </button>
+                </div>
+
+                <div id="testProgress" class="mt-4 hidden">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-purple-500 h-2 rounded-full" style="width: 0%" id="progressBar"></div>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2" id="progressText">0% Complete</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
+        let testResults = [];
+
         async function convert(type) {
             const temp = document.getElementById('temperature').value;
             const resultDiv = document.getElementById('result');
@@ -80,6 +115,82 @@
                 alert('An error occurred');
                 console.error(error);
             }
+        }
+
+        async function runStressTest(type) {
+            const requestCount = parseInt(document.getElementById('requestCount').value);
+            const testTemp = parseFloat(document.getElementById('testTemp').value);
+            const stressTestBtn = document.getElementById('stressTestBtn');
+            const progressDiv = document.getElementById('testProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            if (!requestCount || !testTemp) {
+                alert('Please enter valid values for requests and temperature');
+                return;
+            }
+
+            // Reset test results
+            testResults = [];
+            stressTestBtn.disabled = true;
+            progressDiv.classList.remove('hidden');
+            downloadBtn.classList.add('hidden');
+
+            for (let i = 0; i < requestCount; i++) {
+                const startTime = performance.now();
+                
+                try {
+                    const response = await fetch('/convert', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            temperature: testTemp,
+                            type: type
+                        })
+                    });
+
+                    const data = await response.json();
+                    const totalTime = performance.now() - startTime;
+
+                    testResults.push({
+                        requestNumber: i + 1,
+                        responseTime: data.metrics.response_time_ms,
+                        totalTime: totalTime,
+                        memoryUsage: data.metrics.memory_percent,
+                        cpuUsage: data.metrics.cpu_percent
+                    });
+
+                    // Update progress
+                    const progress = ((i + 1) / requestCount * 100).toFixed(0);
+                    progressBar.style.width = `${progress}%`;
+                    progressText.textContent = `${progress}% Complete`;
+                    stressTestBtn.textContent = `Testing ${i + 1}/${requestCount}`;
+
+                } catch (error) {
+                    console.error('Error during stress test:', error);
+                }
+            }
+
+            stressTestBtn.disabled = false;
+            stressTestBtn.textContent = 'Run Test';
+            downloadBtn.classList.remove('hidden');
+        }
+
+        function downloadMetrics() {
+            // Create CSV content
+            const headers = 'Request Number,Response Time (ms),Total Time (ms),Memory Usage (%),CPU Usage (%)\n';
+            const csvContent = testResults.map(result => 
+                `${result.requestNumber},${result.responseTime.toFixed(2)},${result.totalTime.toFixed(2)},${result.memoryUsage.toFixed(2)},${result.cpuUsage.toFixed(2)}`
+            ).join('\n');
+
+            const blob = new Blob([headers + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'traditional_performance_metrics.csv';
+            link.click();
         }
     </script>
 </body>
