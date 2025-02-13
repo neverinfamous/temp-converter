@@ -5,38 +5,81 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 500px;
+            max-width: 600px;
             margin: 50px auto;
             text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .mode {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 16px;
         }
         input, select, button {
             font-size: 16px;
             margin: 10px;
-            padding: 5px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
         }
         #result {
-            font-size: 20px;
+            font-size: 24px;
             margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            min-height: 30px;
         }
     </style>
 </head>
 <body>
-    <h1>Temperature Converter</h1>
+    <h1>Traditional HTML, CSS, JavaScript, and Python Integration Implementation</h1>
+    <div class="mode">Current Mode: <span id="mode">Celsius to Fahrenheit</span></div>
     <input type="number" id="temp" placeholder="Enter temperature">
     <select id="unit">
         <option value="C">Celsius</option>
         <option value="F">Fahrenheit</option>
     </select>
     <button onclick="convert()">Convert</button>
-    <div id="result"></div>
+    <button onclick="toggleMode()">Toggle C/F</button>
+    <div id="result">--</div>
 
     <script>
+        let isCtoF = true;
+        
+        function updateMode() {
+            document.getElementById('mode').textContent = 
+                isCtoF ? 'Celsius to Fahrenheit' : 'Fahrenheit to Celsius';
+            document.getElementById('unit').value = isCtoF ? 'C' : 'F';
+        }
+        
+        function toggleMode() {
+            isCtoF = !isCtoF;
+            updateMode();
+        }
+        
         async function convert() {
             const temp = document.getElementById('temp').value;
             const unit = document.getElementById('unit').value;
             
             try {
-                // Use current URL instead of hardcoded localhost
                 const response = await fetch('/convert', {
                     method: 'POST',
                     headers: {
