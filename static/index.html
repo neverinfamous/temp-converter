@@ -36,7 +36,8 @@
             const unit = document.getElementById('unit').value;
             
             try {
-                const response = await fetch('http://localhost:5000/convert', {
+                // Use current URL instead of hardcoded localhost
+                const response = await fetch('/convert', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
