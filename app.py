@@ -17,13 +17,30 @@ app.jinja_env.cache_size = 50
 PERFORMANCE_METRICS = {
     'response_times': [],
     'memory_usage': [],
-    'start_time': time.time()
+    'start_time': time.time(),
+    'last_cpu_time': time.process_time(),
+    'last_wall_time': time.time()
 }
 
 def get_system_metrics():
+    current_cpu_time = time.process_time()
+    current_wall_time = time.time()
+    
+    # Calculate CPU usage
+    if 'last_cpu_time' in PERFORMANCE_METRICS:
+        cpu_diff = current_cpu_time - PERFORMANCE_METRICS['last_cpu_time']
+        wall_diff = current_wall_time - PERFORMANCE_METRICS['last_wall_time']
+        cpu_percent = (cpu_diff / wall_diff) * 100.0 if wall_diff > 0 else 0.0
+    else:
+        cpu_percent = 0.0
+    
+    # Update last times
+    PERFORMANCE_METRICS['last_cpu_time'] = current_cpu_time
+    PERFORMANCE_METRICS['last_wall_time'] = current_wall_time
+    
     return {
         'memory_percent': psutil.Process(os.getpid()).memory_percent(),
-        'cpu_percent': psutil.Process(os.getpid()).cpu_percent()
+        'cpu_percent': cpu_percent
     }
 
 @app.route('/')
@@ -39,10 +56,13 @@ def convert():
         temp = float(data['temperature'])
         conversion_type = data['type']
         
-        if conversion_type == 'ctof':
-            result = (temp * 9/5) + 32
-        else:
-            result = (temp - 32) * 5/9
+        # Add some computation to make CPU usage measurable
+        result = 0
+        for _ in range(10000):
+            if conversion_type == 'ctof':
+                result = (temp * 9/5) + 32
+            else:
+                result = (temp - 32) * 5/9
             
         # Record performance metrics
         response_time = (time.time() - start_time) * 1000  # Convert to ms
